@@ -25,11 +25,18 @@
 #+win32
 (cffi:use-foreign-library webview-loader-lib)
 
-
 #+win32
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (cffi::register-foreign-library 'webview-lib `((:win32 (:default ,$webview-library-pathname)))))
 
+#+win32
+(cffi:use-foreign-library webview-lib)
+
+(cffi:defcfun (webview-create "webview_create" :library webview-lib) :pointer
+  (debug :int)
+  (window :pointer))
+
+#+nil (setf $wv (webview-create 1 (cffi:null-pointer)))
 
 ;;; macos
 ;;; ---------------------------------------------------------------------
