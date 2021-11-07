@@ -6,6 +6,11 @@
 ;;; windows
 ;;; ---------------------------------------------------------------------
 
+(defparameter +WEBVIEW_HINT_NONE+ 0)  ; Width and height are default size
+(defparameter +WEBVIEW_HINT_MIN+ 1)   ; Width and height are minimum bounds
+(defparameter +WEBVIEW_HINT_MAX+ 2)   ; Width and height are maximum bounds
+(defparameter +WEBVIEW_HINT_FIXED+ 3) ; Window size can not be changed by a user
+
 #+win32
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter $webview-loader-pathname
@@ -36,7 +41,6 @@
 ;;; ---------------------------------------------------------------------
 ;;; API definitions
 ;;; ---------------------------------------------------------------------
-
 
 (cffi:defcfun (webview-create "webview_create" :library webview-lib) :pointer
   (debug :int)
@@ -75,6 +79,53 @@
 #+nil (webview-set-title $wv "Hello!")
 #+nil (webview-destroy $wv)
 
+(cffi:defcfun (webview-set-size "webview_set_size" :library webview-lib) :void
+  (webview :pointer)
+  (width :int)
+  (height :int)
+  (hints :int))
+
+(cffi:defcfun (webview-navigate "webview_navigate" :library webview-lib) :void
+  (webview :pointer)
+  (url :string))
+
+;;; Injects JavaScript code at the initialization of the new page. Every time
+;;; the webview will open a the new page - this initialization code will be
+;;; executed. It is guaranteed that code is executed before window.onload.
+(cffi:defcfun (webview-init "webview_init" :library webview-lib) :void
+  (webview :pointer)
+  (js :string))
+
+(cffi:defcfun (webview-eval "webview_eval" :library webview-lib) :void
+  (webview :pointer)
+  (js :string))
+
+;;; Binds a native C callback so that it will appear under the given name as a
+;;; global JavaScript function. Internally it uses webview_init(). Callback
+;;; receives a request string and a user-provided argument pointer. Request
+;;; string is a JSON array of all the arguments passed to the JavaScript
+;;; function.
+;; WEBVIEW_API void webview_bind(webview_t w, const char *name,
+;;                               void (*fn)(const char *seq, const char *req,
+;;                                          void *arg),
+;;                               void *arg);
+
+;;; Allows to return a value from the native binding. Original request pointer
+;;; must be provided to help internal RPC engine match requests with responses.
+;;; If status is zero - result is expected to be a valid JSON result value.
+;;; If status is not zero - result is an error JSON object.
+;; WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
+;;                                 const char *result);
+
+
+
+#+nil (setf $wv (webview-create 1 (cffi:null-pointer)))
+#+nil (webview-set-title $wv "Hello!")
+#+nil (webview-set-size $wv 800 600 +WEBVIEW_HINT_NONE+)
+#+nil (webview-navigate $wv "http://en.wikipedia.org")
+#+nil (webview-run $wv)
+#+nil (webview-terminate $wv)
+#+nil (webview-destroy $wv)
 
 
 ;;; ---------------------------------------------------------------------
